@@ -14,47 +14,62 @@
 
 void	philo_lst_clear(t_philo	*philo)
 {
-	t_philo	*tmp;
+	t_philo	*tmp_philo;
+	t_fork	*tmp_fork;
 	int		len;
 
 	len = philo->philo;
 	free(philo->print);
 	while (len > 0)
 	{
-		tmp = philo;
-		philo = philo->next;
-		free(tmp->fork);
-		if (tmp->philo % 2)
-			free(tmp->right_fork);
-		free(tmp);
+		tmp_philo = philo;
+		tmp_fork = philo->next;
+		philo = tmp_fork->next;
+		free(tmp_philo);
+		free(tmp_fork->fork);
+		free(tmp_fork->check_fork);
+		free(tmp_fork);
 		--len;
 	}
 }
 
-void	philo_clear(t_philo	*philo)
+void	fork_lst_clear(t_fork *fork)
 {
-	if (philo->print)
+	t_fork	*tmp_fork;
+	t_philo	*tmp_philo;
+	int		len;
+
+	len = fork->next->philo;
+	free(fork->next->print);
+	while (len > 0)
 	{
-		free(philo->print);
-		philo->print = NULL;
+		tmp_fork = fork;
+		tmp_philo = fork->next;
+		fork = tmp_philo->next;
+		free(tmp_fork->fork);
+		free(tmp_fork->check_fork);
+		free(tmp_fork);
+		free(tmp_philo);
+		--len;
 	}
-	free(philo->fork);
-	if (philo->left_fork)
-		free(philo->left_fork);
-	else if (philo->right_fork)
-		free(philo->right_fork);
-	free(philo);
 }
 
-void	philo_connector(t_philo *philo)
+void	fork_clear(t_fork *fork)
 {
-	t_philo	*tmp;
+	free(fork->check_fork);
+	free(fork->fork);
+	free(fork);
+}
 
-	tmp = philo;
-	while (tmp->next)
-		tmp = tmp->next;
-	philo->prev = tmp;
-	tmp->next = philo;
+void	lst_connector(t_fork *fork)
+{
+	t_fork	*tmp;
+
+	tmp = fork;
+	while (tmp->next->next)
+		tmp = tmp->next->next;
+	tmp->next->next = fork;
+	fork->prev = tmp->next;
 }
 
 void	thread_clear(t_thread *thread)

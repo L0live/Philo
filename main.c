@@ -26,10 +26,10 @@ int	main(int ac, char **av)
 		return (EXIT_FAILURE);
 	if (thread_main(philo) == -1)
 	{
-		philo_lst_clear(philo->next);
+		philo_lst_clear(philo->next->next);
 		return (EXIT_FAILURE);
 	}
-	philo_lst_clear(philo->next);
+	philo_lst_clear(philo->next->next);
 	return (EXIT_SUCCESS);
 }
 
@@ -37,11 +37,16 @@ int	thread_main(t_philo *philo)
 {
 	t_thread	*thread;
 	t_thread	*tmp;
+	int			odd;
 
-	thread = thread_init(philo, philo->next->philo);
+	odd = FALSE;
+	if (philo->next->next->philo % 2)
+		odd = TRUE;
+	thread = thread_init(philo, odd, philo->next->next->philo);
 	if (!thread)
 		return (-1);
 	tmp = thread;
+	pthread_mutex_lock(philo->print);
 	while (tmp)
 	{
 		if (pthread_create(&tmp->thread, NULL, philo_main, tmp->philo) != 0)
@@ -52,6 +57,7 @@ int	thread_main(t_philo *philo)
 		}
 		tmp = tmp->next;
 	}
+	pthread_mutex_unlock(philo->print);
 	thread_clear(thread);
 	return (0);
 }
@@ -64,20 +70,25 @@ void	*philo_main(void *ptr)
 	i = 0;
 	philo = ptr;
 	print_or_die(philo, "SET TIME");
-	while (philo && philo->dying >= 0 && philo->must_eat != 0)
+	if (philo->philo % 2 && ++i
+		&& (print_or_die(philo, "is thinking") == -1
+		|| ft_usleep(philo, philo->to_eat) == -1))
+		return (NULL);
+	while (philo->must_eat)
 	{
-		if (philo != philo->next && (philo->philo + i) % 2 == 0)
+		if ((philo->philo + i) % 2 == 0 && philo->must_eat != 0)
 		{
 			philo->must_eat -= 1;
 			if (eating(philo) == -1)
 				break ;
+			++i;
+			continue ;
 		}
-		else if (philo != philo->next)
-		{
-			if (sleeping(philo, i) == -1)
-				break ;
-		}
-		else if (thinking(philo, philo->dying + 1) == -1)
+		if (i && sleeping(philo) == -1)
+			break ;
+		if (print_or_die(philo, "is thinking") == -1)
+			break ;
+		if (philo->odd == TRUE && ft_usleep(philo, 500) == -1)
 			break ;
 		++i;
 	}

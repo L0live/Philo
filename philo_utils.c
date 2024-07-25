@@ -29,6 +29,8 @@ int	check_params(char **av)
 				return (-1);
 			++i;
 		}
+		if (!ph_atol(av[k]))
+			return (-1);
 		++k;
 	}
 	return (0);
@@ -88,7 +90,7 @@ int	print_or_die(t_philo *philo, char *str)
 		pthread_mutex_unlock(philo->print);
 		return (-1);
 	}
-	if (philo->dying < 0)
+	if (philo->dying <= 0)
 	{
 		printf("%lld %ld %s\n", get_time() - time, philo->philo, "died");
 		time = -1;
