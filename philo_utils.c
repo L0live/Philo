@@ -29,7 +29,7 @@ int	check_params(char **av)
 				return (-1);
 			++i;
 		}
-		if (!ph_atol(av[k]))
+		if (!ph_atol(av[k]) || ph_atol(av[k]) == -1)
 			return (-1);
 		++k;
 	}
@@ -51,6 +51,8 @@ long	ph_atol(char *str)
 		nbr += str[i] - 48;
 		++i;
 	}
+	if (nbr > 2147483647)
+		return (-1);
 	return (nbr);
 }
 
@@ -59,6 +61,8 @@ int	ft_strcmp(char *s1, char *s2)
 	int	i;
 
 	i = 0;
+	if (!s1 || !s2)
+		return (-1);
 	while (s1[i] || s2[i])
 	{
 		if (s1[i] != s2[i])
@@ -81,15 +85,21 @@ long long	get_time(void)
 int	print_or_die(t_philo *philo, char *str)
 {
 	static long long	time = 0;
+	int					test;
 
 	pthread_mutex_lock(philo->print);
-	if (time == -1 || !ft_strcmp(str, "SET TIME"))
+	if (time == -1 || !ft_strcmp(str, "SET TIME") || !str)
 	{
 		if (time == 0)
 			time = get_time();
+		if (!str)
+			time = -1;
+		test = time;
 		pthread_mutex_unlock(philo->print);
-		return (-1);
+		return (test);
 	}
+	if (!ft_strcmp(str, "is eating"))
+		philo->must_eat -= 1;
 	if (philo->dying <= 0)
 	{
 		printf("%lld %ld %s\n", get_time() - time, philo->philo, "died");

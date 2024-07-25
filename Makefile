@@ -1,6 +1,6 @@
 NAME=philo
 CC=cc
-CFLAGS=-Wall -Werror -Wextra -g
+CFLAGS=-Wall -Werror -Wextra -g -fsanitize=thread
 SRCS=srcs/main.c srcs/philo_utils.c srcs/instructions.c srcs/init.c srcs/struct_utils.c
 OBJS=$(SRCS:.c=.o)
 HEADER=srcs/philo.h

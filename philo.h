@@ -23,7 +23,7 @@
 # define TRUE 1
 # define VIP_ACCESS 2
 
-typedef struct s_philo t_philo;
+typedef struct s_philo	t_philo;
 
 typedef struct s_fork
 {
@@ -60,7 +60,7 @@ void		*philo_main(void *ptr);
 int			ft_usleep(t_philo *philo, long long sleep);
 int			eating(t_philo *philo);
 int			sleeping(t_philo *philo);
-int			thread_main(t_philo *philo);
+int			thread_main(t_thread *thread, int philo_nb);
 t_thread	*thread_init(t_philo *philo, int odd, long count);
 long long	get_time(void);
 int			check_params(char **av);
