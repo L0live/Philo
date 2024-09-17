@@ -27,9 +27,9 @@ t_philo	*philo_init(t_fork *next, long nb, char **av, long count)
 		return (NULL);
 	philo->next = next;
 	philo->philo = nb;
-	philo->to_die = (long long)ph_atol(av[0]) * 1000;
-	philo->to_eat = (long long)ph_atol(av[1]) * 1000;
-	philo->to_sleep = (long long)ph_atol(av[2]) * 1000;
+	philo->to_die = (long long)ph_atol(av[0]);
+	philo->to_eat = (long long)ph_atol(av[1]);
+	philo->to_sleep = (long long)ph_atol(av[2]);
 	philo->must_eat = ph_atol(av[3]);
 	philo->dying = philo->to_die;
 	philo->prev = mutex_init(philo, nb, av, count);
@@ -59,8 +59,6 @@ t_fork	*mutex_init(t_philo *philo, long nb, char **av, long count)
 		philo->print = philo->next->next->print;
 	fork->fork = malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(fork->fork, NULL);
-	fork->check_fork = malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(fork->check_fork, NULL);
 	fork->prev = philo_init(fork, nb + 1, av, count - 1);
 	if (!fork->prev)
 	{
@@ -70,27 +68,53 @@ t_fork	*mutex_init(t_philo *philo, long nb, char **av, long count)
 	return (fork);
 }
 
-t_thread	*thread_init(t_philo *philo, int odd, long count)
+t_philo	**philo_to_array(t_philo *philo, long count)
 {
-	t_thread	*lst;
-	pthread_t	thread;
+	t_philo	**philos;
+	t_philo	*tmp;
+	int		i;
 
-	thread = 0;
-	lst = malloc(sizeof(t_thread));
-	if (!lst)
+	philos = malloc(sizeof(t_philo *) * (count + 1));
+	if (!philos)
 		return (NULL);
-	philo->odd = odd;
-	lst->philo = philo;
-	lst->print = philo->print;
-	lst->thread = thread;
-	lst->next = NULL;
-	if (count == 1)
-		return (lst);
-	lst->next = thread_init(philo->prev->prev, odd, count - 1);
-	if (!lst->next)
+	i = 0;
+	tmp = philo;
+	while (i < count)
 	{
-		free(lst);
+		philos[i] = tmp;
+		tmp = tmp->prev->prev;
+		++i;
+	}
+	philos[i] = NULL;
+	return (philos);
+}
+
+
+
+t_thread	*thread_init(t_philo *philo, long philo_nb)
+{
+	t_thread	*thread;
+	int			i;
+
+	thread = malloc(sizeof(t_thread));
+	if (!thread)
+		return (NULL);
+	thread->philos = philo_to_array(philo, philo_nb);
+	if (!thread->philos)
+	{
+		free(thread);
 		return (NULL);
 	}
-	return (lst);
+	thread->print = philo->print;
+	thread->threads = malloc(sizeof(pthread_t) * (philo_nb + 1));
+	if (!thread->threads)
+	{
+		free(thread->philos);
+		free(thread);
+		return (NULL);
+	}
+	i = -1;
+	while (++i <= philo_nb)
+		thread->threads[i] = 0;
+	return (thread);
 }

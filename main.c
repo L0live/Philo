@@ -16,7 +16,6 @@ int	main(int ac, char **av)
 {
 	t_thread	*thread;
 	t_philo		*philo;
-	int			odd;
 
 	if ((ac < 5 || ac > 6 || check_params(&av[1]) == -1))
 	{
@@ -26,10 +25,7 @@ int	main(int ac, char **av)
 	philo = philo_init(NULL, 1, &av[2], ph_atol(av[1]));
 	if (!philo)
 		return (EXIT_FAILURE);
-	odd = FALSE;
-	if (philo->next->next->philo % 2)
-		odd = TRUE;
-	thread = thread_init(philo, odd, philo->next->next->philo);
+	thread = thread_init(philo, philo->next->next->philo);
 	if (!thread || thread_main(thread, philo->next->next->philo) == -1)
 	{
 		philo_lst_clear(philo->next->next);
@@ -41,50 +37,60 @@ int	main(int ac, char **av)
 
 void	must_eat_count(t_thread *thread, int philo_nb)
 {
-	t_thread	*tmp;
-	int			eat_count;
+	int	i;
+	int	eat_count;
 
 	pthread_mutex_unlock(thread->print);
-	tmp = thread;
-	eat_count = 1;
-	while (tmp)
+	i = 0;
+	eat_count = 0;
+	while (thread->philos[i])
 	{
-		pthread_mutex_lock(tmp->print);
-		if (tmp->philo->must_eat == 0)
+		pthread_mutex_lock(thread->print);
+		if (thread->philos[i]->must_eat == 0)
 		{
 			++eat_count;
-			tmp->philo->must_eat -= 1;
+			thread->philos[i]->must_eat -= 1;
 		}
-		pthread_mutex_unlock(tmp->print);
-		if (eat_count == philo_nb || print_or_die(tmp->philo, "SET TIME") == -1)
+		pthread_mutex_unlock(thread->print);
+		if (eat_count == philo_nb || print_or_die(thread->philos[i], "SET TIME") == -1)
 		{
-			print_or_die(tmp->philo, NULL);
+			print_or_die(thread->philos[i], NULL);
 			break ;
 		}
-		tmp = tmp->next;
-		if (!tmp->next)
-			tmp = thread;
+		++i;
+		if (!thread->philos[i])
+			i = 0;
 	}
 	pthread_mutex_lock(thread->print);
 }
 
 int	thread_main(t_thread *thread, int philo_nb)
 {
-	t_thread	*tmp;
+	int	grp;
+	int	i;
+	int	j;
 
-	tmp = thread;
+	grp = 2;
+	if (philo_nb % 2)
+		grp = 3;
 	pthread_mutex_lock(thread->print);
-	while (tmp)
+	j = 0;
+	while (j < grp)
 	{
-		if (pthread_create(&tmp->thread, NULL, philo_main, tmp->philo) != 0)
+		i = j;
+		while (i < philo_nb)
 		{
-			write(2, "Error\n", 6);
-			thread_clear(thread);
-			return (-1);
+			if (pthread_create(&thread->threads[i], NULL, philo_main, thread->philos[i]) != 0)
+			{
+				write(2, "Error\n", 6);
+				thread_clear(thread);
+				return (-1);
+			}
+			i += grp;
 		}
-		tmp = tmp->next;
+		++j;
 	}
-	if (thread->philo->must_eat > 0 && philo_nb > 1)
+	if (thread->philos[0]->must_eat > 0 && philo_nb > 1)
 		must_eat_count(thread, philo_nb);
 	pthread_mutex_unlock(thread->print);
 	thread_clear(thread);

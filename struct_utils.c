@@ -27,7 +27,6 @@ void	philo_lst_clear(t_philo	*philo)
 		philo = tmp_fork->next;
 		free(tmp_philo);
 		free(tmp_fork->fork);
-		free(tmp_fork->check_fork);
 		free(tmp_fork);
 		--len;
 	}
@@ -47,7 +46,6 @@ void	fork_lst_clear(t_fork *fork)
 		tmp_philo = fork->next;
 		fork = tmp_philo->next;
 		free(tmp_fork->fork);
-		free(tmp_fork->check_fork);
 		free(tmp_fork);
 		free(tmp_philo);
 		--len;
@@ -56,7 +54,6 @@ void	fork_lst_clear(t_fork *fork)
 
 void	fork_clear(t_fork *fork)
 {
-	free(fork->check_fork);
 	free(fork->fork);
 	free(fork);
 }
@@ -74,14 +71,15 @@ void	lst_connector(t_fork *fork)
 
 void	thread_clear(t_thread *thread)
 {
-	t_thread	*tmp;
+	int	i;
 
-	tmp = thread;
-	while (tmp)
+	i = 0;
+	while (thread->threads[i])
 	{
-		thread = thread->next;
-		pthread_join(tmp->thread, NULL);
-		free(tmp);
-		tmp = thread;
+		pthread_join(thread->threads[i], NULL);
+		++i;
 	}
+	free(thread->threads);
+	free(thread->philos);
+	free(thread);
 }

@@ -28,7 +28,6 @@ typedef struct s_philo	t_philo;
 typedef struct s_fork
 {
 	pthread_mutex_t	*fork;
-	pthread_mutex_t	*check_fork;
 	int				fork_bool;
 	struct s_philo	*prev;
 	struct s_philo	*next;
@@ -42,7 +41,6 @@ typedef struct s_philo
 	long long		to_eat;
 	long long		to_sleep;
 	long			must_eat;
-	int				odd;
 	pthread_mutex_t	*print;
 	t_fork			*prev;
 	t_fork			*next;
@@ -50,10 +48,9 @@ typedef struct s_philo
 
 typedef struct s_thread
 {
-	pthread_t		thread;
-	t_philo			*philo;
+	pthread_t		*threads;
+	t_philo			**philos;
 	pthread_mutex_t	*print;
-	struct s_thread	*next;
 }	t_thread;
 
 void		*philo_main(void *ptr);
@@ -61,7 +58,7 @@ int			ft_usleep(t_philo *philo, long long sleep);
 int			eating(t_philo *philo);
 int			sleeping(t_philo *philo);
 int			thread_main(t_thread *thread, int philo_nb);
-t_thread	*thread_init(t_philo *philo, int odd, long count);
+t_thread	*thread_init(t_philo *philo, long count);
 long long	get_time(void);
 int			check_params(char **av);
 long		ph_atol(char *str);

@@ -16,9 +16,9 @@ int	ft_usleep(t_philo *philo, long long sleep)
 {
 	long long	timestamp;
 
-	timestamp = get_time() * 1000;
-	while (get_time() * 1000 - timestamp < sleep
-		&& get_time() * 1000 - timestamp < philo->dying)
+	timestamp = get_time();
+	while (get_time() - timestamp < sleep
+		&& get_time() - timestamp < philo->dying)
 		usleep(1);
 	philo->dying -= sleep;
 	if (philo->dying <= 0 && print_or_die(philo, "DIE") == -1)
@@ -26,30 +26,46 @@ int	ft_usleep(t_philo *philo, long long sleep)
 	return (0);
 }
 
-int	fork_lock(t_philo *philo, t_fork *fork_1, t_fork *fork_2)
+void	wait_for_fork(t_philo *philo, t_fork *fork)
 {
-	long long	timestamp;
+	long	timestamp;
 
 	timestamp = get_time();
-	pthread_mutex_lock(fork_1->fork);
-	philo->dying -= (get_time() - timestamp) * 1000;
+	pthread_mutex_lock(fork->fork);
+	while (fork->fork_bool == TRUE
+			&& philo->dying - (get_time() - timestamp) > 0)
+	{
+		pthread_mutex_unlock(fork->fork);
+		pthread_mutex_lock(fork->fork);
+	}
+	fork->fork_bool = TRUE;
+	pthread_mutex_unlock(fork->fork);
+	philo->dying -= get_time() - timestamp;
+}
+
+void	fork_unlock(t_fork *fork)
+{
+	pthread_mutex_lock(fork->fork);
+	fork->fork_bool = FALSE;
+	pthread_mutex_unlock(fork->fork);
+}
+
+int	fork_lock(t_philo *philo, t_fork *fork_1, t_fork *fork_2)
+{
+	if (philo->philo % 2 && philo->prev->prev->philo == 1
+			&& ft_usleep(philo, 1) == -1)
+		return (-1);
+	wait_for_fork(philo, fork_1);
 	if (print_or_die(philo, "has taken a fork") == -1)
 	{
-		pthread_mutex_unlock(fork_1->fork);
+		fork_unlock(fork_1);
 		return (-1);
 	}
-	if (fork_1 == fork_2 && ft_usleep(philo, philo->dying) == -1)
-	{
-		pthread_mutex_unlock(fork_1->fork);
-		return (-1);
-	}
-	timestamp = get_time();
-	pthread_mutex_lock(fork_2->fork);
-	philo->dying -= (get_time() - timestamp) * 1000;
+	wait_for_fork(philo, fork_2);
 	if (print_or_die(philo, "has taken a fork") == -1)
 	{
-		pthread_mutex_unlock(fork_1->fork);
-		pthread_mutex_unlock(fork_2->fork);
+		fork_unlock(fork_1);
+		fork_unlock(fork_2);
 		return (-1);
 	}
 	return (0);
@@ -62,18 +78,23 @@ int	eating(t_philo *philo)
 
 	fork_1 = philo->prev;
 	fork_2 = philo->next;
+	if (fork_1->fork > fork_2->fork)
+	{
+		fork_1 = philo->next;
+		fork_2 = philo->prev;
+	}
 	if (fork_lock(philo, fork_1, fork_2) == -1)
 		return (-1);
 	philo->dying = philo->to_die;
 	if (print_or_die(philo, "is eating") == -1
 		|| ft_usleep(philo, philo->to_eat) == -1)
 	{
-		pthread_mutex_unlock(fork_1->fork);
-		pthread_mutex_unlock(fork_2->fork);
+		fork_unlock(fork_1);
+		fork_unlock(fork_2);
 		return (-1);
 	}
-	pthread_mutex_unlock(fork_1->fork);
-	pthread_mutex_unlock(fork_2->fork);
+	fork_unlock(fork_1);
+	fork_unlock(fork_2);
 	return (0);
 }
 
@@ -84,8 +105,6 @@ int	sleeping(t_philo *philo)
 	if (ft_usleep(philo, philo->to_sleep) == -1)
 		return (-1);
 	if (print_or_die(philo, "is thinking") == -1)
-		return (-1);
-	if (philo->odd == TRUE && ft_usleep(philo, 1000) == -1)
 		return (-1);
 	return (0);
 }
