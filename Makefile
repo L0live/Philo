@@ -1,4 +1,4 @@
-NAME=philo
+NAME=Philo
 CC=cc
 CFLAGS=-Wall -Werror -Wextra -g 
 SRCS=srcs/main.c srcs/philo_utils.c srcs/instructions.c srcs/init.c srcs/struct_utils.c
