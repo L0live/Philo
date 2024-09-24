@@ -82,48 +82,27 @@ long long	get_time(void)
 	return (timestamp);
 }
 
-int	print_config(long long *time, char *str)
-{
-	if (*time == -1)
-		return (-1);
-	if (!str)
-	{
-		*time = -1;
-		return (-1);
-	}
-	if (!ft_strcmp(str, "SET TIME"))
-	{
-		*time = get_time();
-		return (1);
-	}
-	if (!ft_strcmp(str, "CHECK DEATH"))
-		return (1);
-	return (0);
-}
-
 int	print(t_philo *philo, char *str)
 {
-	static long long	time = 0;
-	int					config;
+	static int	print_bool = TRUE;
 
-	pthread_mutex_lock(philo->print);/* 
-	printf("current_time: %lld, start_time: %lld, philo: %ld\n", current_time, time, philo->philo); */
-	config = print_config(&time, str);
-	if (config)
-	{
-		pthread_mutex_unlock(philo->print);
-		return (config);
-	}
 	if (!ft_strcmp(str, "is eating"))
-		philo->must_eat -= 1;
-	if (philo->dying <= 0)
 	{
-		printf("%lld %ld %s\n", get_time() - time, philo->philo, "died");
-		time = -1;
-		pthread_mutex_unlock(philo->print);
+		pthread_mutex_lock(philo->thread->super);
+		philo->must_eat -= 1;
+		pthread_mutex_unlock(philo->thread->super);
+	}
+	pthread_mutex_lock(philo->thread->print);
+	if (!str || print_bool == FALSE)
+	{
+		print_bool = FALSE;
+		pthread_mutex_unlock(philo->thread->print);
 		return (-1);
 	}
-	printf("%lld %ld %s\n", get_time() - time, philo->philo, str);
-	pthread_mutex_unlock(philo->print);
+	if (print_bool == TRUE)
+		printf("%lld %d %s\n", get_time() - philo->thread->time, philo->philo, str);
+	if (!ft_strcmp(str, "died"))
+		print_bool = FALSE;
+	pthread_mutex_unlock(philo->thread->print);
 	return (0);
 }
